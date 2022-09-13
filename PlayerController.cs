@@ -56,6 +56,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float maxXMovement;
 
+    [SerializeField]
+    private float maxJump = 2.0f;
+
     private GameObject currentWeaponObject;
     private GroundSlash groundSlash;
     private Vector3 slashDestination;
@@ -342,13 +345,69 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void Dodge()
+    {
+        if (power <= 0.0f)
+            return;
+
+        if (playerAnimator)
+        {
+            int dodgeIndex = UnityEngine.Random.Range(0, 4);
+            playerAnimator.SetBool("isDodging", true);
+            playerAnimator.SetFloat("DodgeRandomizer", dodgeIndex);
+
+            if (dodgeIndex == 0)
+            {
+                var pos = this.transform.position - this.transform.forward;
+                if (pos.x >= minXMovement && pos.x <= maxXMovement)
+                {
+                    this.transform.position = pos;
+                }
+            }
+            else if (dodgeIndex == 1)
+            {
+                var pos = this.transform.position - this.transform.forward;
+                if (pos.x >= minXMovement && pos.x <= maxXMovement)
+                {
+                    this.transform.position = pos;
+                }
+            }
+            else if (dodgeIndex == 2)
+            {
+                var pos = this.transform.position + this.transform.forward;
+                if (pos.x >= minXMovement && pos.x <= maxXMovement)
+                {
+                    this.transform.position = pos;
+                }
+            }
+            else if (dodgeIndex == 3)
+            {
+                var pos = this.transform.position + this.transform.forward;
+                if (pos.x >= minXMovement && pos.x <= maxXMovement)
+                {
+                    this.transform.position = pos;
+                }
+            }
+
+            // Decrement power with each attack
+            DecrementPower(0.2f);
+
+            UpdatePowerSlider();
+        }
+    }
+
+    public void StopDodging()
+    {
+        if (playerAnimator)
+        {
+            playerAnimator.SetBool("isDodging", false);
+        }
+    }
+
     private void PlayAnimations()
     {
         if (playerAnimator)
         {
-            //if (this.transform.position.x <= minXMovement || this.transform.position.x >= maxXMovement)
-            //    return;
-
             var xVal = playerJoystick.Horizontal;
 
             playerAnimator.SetFloat("Speed", Mathf.Abs(xVal));
@@ -374,6 +433,16 @@ public class PlayerController : MonoBehaviour
         Move();
 
         PlayAnimations();
+
+        CheckMaxJump();
+    }
+
+    private void CheckMaxJump()
+    {
+        if (this.transform.position.y > maxJump)
+        {
+            this.transform.position = new Vector3(this.transform.position.x, 0, this.transform.position.z);
+        }
     }
 
     private void OnTriggerEnter(Collider other)

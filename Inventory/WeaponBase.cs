@@ -142,7 +142,35 @@ public class WeaponBase : MonoBehaviour
                 monster.DecrementHealth(this.damageValue);
                 if (monster.GetHealth() <= 0.0f)
                 {
-                    Destroy(monster.gameObject);
+                    // Instantiate one of the collectable
+
+                    GameObject prefab;
+
+                    int ch = UnityEngine.Random.Range(0, 3);
+                    if (ch == 0)
+                    {
+                        prefab = Resources.Load<GameObject>("coin");
+                    }
+                    else if (ch == 1)
+                    {
+                        prefab = Resources.Load<GameObject>("health");
+                    }
+                    else if (ch == 2)
+                    {
+                        prefab = Resources.Load<GameObject>("powerups");
+                    }
+                    else
+                    {
+                        prefab = Resources.Load<GameObject>("coin");
+                    }
+
+                    var collectable = Instantiate(prefab);
+
+                    collectable.transform.position = new Vector3(monster.transform.position.x, collectable.transform.position.y, collectable.transform.position.z);
+
+                    monster.GetComponent<BaseEnemyController>().Die();
+
+                    Destroy(monster.gameObject, 5);
                 }
             }
         }

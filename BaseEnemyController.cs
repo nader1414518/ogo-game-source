@@ -90,7 +90,7 @@ public class BaseEnemyController : MonoBehaviour
         if (collision.gameObject.tag == "Player")
         {
             isAttacking = true;
-            this.animator.SetFloat("Speed", 1.0f);
+            this.animator.SetFloat("Speed", 0.5f);
         }
     }
 
@@ -126,5 +126,10 @@ public class BaseEnemyController : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void Die()
+    {
+        this.animator.SetFloat("Speed", 1.0f);
     }
 }
