@@ -23,6 +23,12 @@ public class BaseEnemyController : MonoBehaviour
     private float health = 1.0f;
 
     private bool isAttacking = false;
+    private bool isDead = false;
+
+    public bool IsDead()
+    {
+        return this.isDead;
+    }
 
     protected void InitializeFields()
     {
@@ -58,6 +64,9 @@ public class BaseEnemyController : MonoBehaviour
 
     private void Update()
     {
+        if (isDead)
+            return;
+
         Move();
     }
 
@@ -70,8 +79,8 @@ public class BaseEnemyController : MonoBehaviour
                 this.transform.position = Vector3.MoveTowards(
                     this.transform.position,
                     new Vector3(playerRef.transform.position.x,
-                        this.transform.position.y,
-                        playerRef.transform.position.z),
+                        0,
+                        0),
                     speed * Time.deltaTime);
                 //this.transform.LookAt(playerRef.transform.position, Vector3.up);
                 Vector3 relativePos = playerRef.transform.position - this.transform.position;
@@ -87,6 +96,9 @@ public class BaseEnemyController : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (isDead)
+            return;
+
         if (collision.gameObject.tag == "Player")
         {
             isAttacking = true;
@@ -96,6 +108,9 @@ public class BaseEnemyController : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
+        if (isDead)
+            return;
+
         if (collision.gameObject.tag == "Player")
         {
             isAttacking = false;
@@ -105,6 +120,9 @@ public class BaseEnemyController : MonoBehaviour
 
     private void OnCollisionStay(Collision collision)
     {
+        if (isDead)
+            return;
+
         if (collision.gameObject.tag == "Player")
         {
             var player = collision.gameObject.GetComponent<PlayerController>();
@@ -131,5 +149,7 @@ public class BaseEnemyController : MonoBehaviour
     public void Die()
     {
         this.animator.SetFloat("Speed", 1.0f);
+
+        this.isDead = true;
     }
 }

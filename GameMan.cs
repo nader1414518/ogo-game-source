@@ -13,6 +13,9 @@ public class GameMan : MonoBehaviour
     private List<WeaponBase> availableWeapons;
 
     [SerializeField]
+    private List<GameObject> enemiesPrefabs;
+
+    [SerializeField]
     private float minX;
 
     [SerializeField]
@@ -44,6 +47,38 @@ public class GameMan : MonoBehaviour
     private int currentWeaponIndex = 0;
 
     Vector3 currentPos;
+
+    public int waveIndex = 0;
+    public int enemyCount = 0;
+    private int waveCount = 10;
+
+    private void ClearSpawnEnemiesSettings()
+    {
+        this.waveIndex = 0;
+        this.enemyCount = 0;
+    }
+
+    private void SpawnEnemyWave()
+    {
+        var playerRef = FindObjectOfType<PlayerController>();
+        if (playerRef)
+        {
+            for (int i = 0; i < waveCount; i++)
+            {
+                var enemy = Instantiate(enemiesPrefabs[UnityEngine.Random.Range(0, enemiesPrefabs.Count)]);
+                enemy.transform.position = new Vector3(UnityEngine.Random.Range(playerRef.minXMovement, playerRef.maxXMovement), 0, 0);
+
+                enemyCount++;
+            }
+
+            waveIndex++;
+        }
+    }
+
+    public void DecreaseEnemiesCount()
+    {
+        this.enemyCount--;
+    }
 
     public void UpdateHealthProgressBar()
     {
@@ -304,11 +339,17 @@ public class GameMan : MonoBehaviour
         GenerateCollectables();
 
         LoadWeapon();
+
+        ClearSpawnEnemiesSettings();
+
+        SpawnEnemyWave();
     }
 
     private void Update()
     {
         CheckPanRotationControlForPlayer();
+
+        //SpawnEnemies();
     }
 
     void CheckPanRotationControlForPlayer()

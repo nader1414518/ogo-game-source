@@ -16,6 +16,15 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
 
     [SerializeField]
+    private CharacterController characterController;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    [SerializeField]
+    private Dictionary<string, AudioClip> sfxClips;
+
+    [SerializeField]
     private Slider powerProgressBar;
 
     [SerializeField]
@@ -41,6 +50,28 @@ public class PlayerController : MonoBehaviour
 
     private bool isGrounded = false;
 
+    public bool isAttacking = false;
+
+    private bool isClimbing = false;
+
+    private bool inPosition;
+    private bool isLerping;
+    float climbT;
+    Vector3 startPos;
+    Vector3 targetPos;
+    Quaternion startRot;
+    Quaternion targetRot;
+    Transform climbHelper;
+
+    [SerializeField]
+    private float positionOffset;
+
+    [SerializeField]
+    private float offsetFromWall = 0.3f;
+
+    [SerializeField]
+    private float speedMutlipier = 0.2f;
+
     [SerializeField]
     private float health;
     [SerializeField]
@@ -51,10 +82,10 @@ public class PlayerController : MonoBehaviour
     private int score;
 
     [SerializeField]
-    private float minXMovement;
+    public float minXMovement;
 
     [SerializeField]
-    private float maxXMovement;
+    public float maxXMovement;
 
     [SerializeField]
     private float maxJump = 2.0f;
@@ -63,6 +94,94 @@ public class PlayerController : MonoBehaviour
     private GroundSlash groundSlash;
     private Vector3 slashDestination;
 
+    #region ClimbingFunctionality
+    private void InitForClimb()
+    {
+        climbHelper = new GameObject().transform;
+        climbHelper.name = "ClimbHelper";
+
+        CheckForClimb();
+    }
+
+    private void CheckForClimb()
+    {
+        Vector3 origin = this.transform.position;
+        origin.y += 1.4f;
+        Vector3 dir = this.transform.forward;
+        RaycastHit hit;
+        if (Physics.Raycast(origin, dir, out hit, 2))
+        {
+            // Check walls here 
+            if (hit.transform.gameObject.tag == "Wall")
+            {
+                InitForClimb(hit);
+            }
+            else
+            {
+                isClimbing = false;
+                if (playerAnimator)
+                {
+                    Debug.Log("Player is not climbing anymore ... ");
+                    playerAnimator.SetBool("isClimbing", isClimbing);
+                }
+            }
+        }
+    }
+
+    private void InitForClimb(RaycastHit hit)
+    {
+        isClimbing = true;
+        climbHelper.transform.rotation = Quaternion.LookRotation(-hit.normal);
+        startPos = this.transform.position;
+        targetPos = hit.point + (hit.normal * offsetFromWall);
+        climbT = 0;
+        inPosition = false;
+        //characterController.enabled = false;
+        if (playerAnimator)
+        {
+            Debug.Log("Player is climbing ... ");
+            playerAnimator.SetBool("isClimbing", isClimbing);
+        }
+    }
+
+    private void GetInClimbPosition()
+    {
+        climbT += Time.deltaTime;
+
+        if (climbT > 1)
+        {
+            climbT = 1;
+            inPosition = true;
+
+            // Enable the IK
+        }
+
+        Vector3 tp = Vector3.Lerp(startPos, targetPos, climbT);
+        this.transform.position = tp;
+    }
+
+    private void ClimbTick()
+    {
+        if (!isClimbing)
+            return;
+
+        if (!inPosition)
+        {
+            GetInClimbPosition();
+            return;
+        }
+    }
+
+    private Vector3 PosWithOffset(Vector3 origin, Vector3 target)
+    {
+        Vector3 direction = origin - target;
+        direction.Normalize();
+        Vector3 offset = direction * offsetFromWall;
+        return target + offset;
+    }
+    #endregion
+
+    #region Weapons
     public WeaponBase GetCurrentWeapon()
     {
         return this.currentWeapon;
@@ -104,7 +223,9 @@ public class PlayerController : MonoBehaviour
             avatarObject.PlaceWeapon(weapon);
         }
     }
+    #endregion
 
+    #region UIAndInventory
     private void UpdateCoinsTxt()
     {
         if (coinsTxt)
@@ -219,7 +340,9 @@ public class PlayerController : MonoBehaviour
 
         UpdateCoinsTxt();
     }
+    #endregion
 
+    #region Animations
     private void Move()
     {
         if (playerJoystick)
@@ -236,30 +359,42 @@ public class PlayerController : MonoBehaviour
                 this.transform.rotation = Quaternion.Euler(0, 270, 0);
             }
 
-            if (rb)
+            if (xVal != 0)
             {
-                if (xVal != 0)
+                if (this.transform.position.x <= minXMovement)
                 {
-                    if (this.transform.position.x <= minXMovement)
+                    if (xVal > 0)
                     {
-                        if (xVal > 0)
-                        {
-                            rb.velocity = new Vector3(xVal * speed, 0, 0) * Time.deltaTime;
-                        }
-                    }
-                    else if (this.transform.position.x >= maxXMovement)
-                    {
-                        if (xVal < 0)
-                        {
-                            rb.velocity = new Vector3(xVal * speed, 0, 0) * Time.deltaTime;
-                        }
-                    }
-                    else
-                    {
-                        rb.velocity = new Vector3(xVal * speed, 0, 0) * Time.deltaTime;
+                        //rb.velocity = new Vector3(xVal * speed, -9.8f, 0) * Time.deltaTime;
+                        //rb.AddForce(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                        characterController.Move(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                        this.PlaySound("walk");
                     }
                 }
+                else if (this.transform.position.x >= maxXMovement)
+                {
+                    if (xVal < 0)
+                    {
+                        //rb.velocity = new Vector3(xVal * speed, -9.8f, 0) * Time.deltaTime;
+                        //rb.AddForce(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                        characterController.Move(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                        this.PlaySound("walk");
+                    }
+                }
+                else
+                {
+                    //rb.velocity = new Vector3(xVal * speed, -9.8f, 0) * Time.deltaTime;
+                    //rb.AddForce(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                    characterController.Move(new Vector3(xVal * speed, 0, 0) * Time.deltaTime);
+                    this.PlaySound("walk");
+                }
             }
+            //else
+            //{
+            //    this.StopSound();
+            //}
+
+            this.transform.position = new Vector3(this.transform.position.x, 0, 0);
         }
     }
 
@@ -277,15 +412,19 @@ public class PlayerController : MonoBehaviour
             playerAnimator.SetFloat("AttackRandomizerFloat", rand);
             playerAnimator.SetBool("isAttacking", true);
 
+            isAttacking = true;
+
             // Decrement power with each attack
             DecrementPower(0.1f);
 
             UpdatePowerSlider();
 
-            if (rand == 2)
-            {
-                MakeGroundSlash();
-            }
+            //if (rand == 2)
+            //{
+            //    MakeGroundSlash();
+            //}
+
+            this.PlaySound("attack");
         }
     }
 
@@ -327,6 +466,7 @@ public class PlayerController : MonoBehaviour
         if (playerAnimator)
         {
             playerAnimator.SetBool("isAttacking", false);
+            isAttacking = false;
         }
     }
 
@@ -341,6 +481,8 @@ public class PlayerController : MonoBehaviour
                 {
                     playerAnimator.SetBool("isJumping", true);
                 }
+
+                this.PlaySound("jump");
             }
         }
     }
@@ -355,6 +497,7 @@ public class PlayerController : MonoBehaviour
             int dodgeIndex = UnityEngine.Random.Range(0, 4);
             playerAnimator.SetBool("isDodging", true);
             playerAnimator.SetFloat("DodgeRandomizer", dodgeIndex);
+            this.PlaySound("jump");
 
             if (dodgeIndex == 0)
             {
@@ -413,6 +556,41 @@ public class PlayerController : MonoBehaviour
             playerAnimator.SetFloat("Speed", Mathf.Abs(xVal));
         }
     }
+    #endregion
+
+    #region Sounds
+    private void PlaySound(string key)
+    {
+        if (audioSource)
+        {
+            if (!audioSource.isPlaying)
+            {
+                audioSource.clip = this.sfxClips[key];
+                audioSource.Play();
+            }
+        }
+    }
+
+    private void StopSound()
+    {
+        if (audioSource)
+        {
+            audioSource.Stop();
+        }
+    }
+
+    private void LoadSounds()
+    {
+        this.sfxClips = new Dictionary<string, AudioClip>();
+        var audioClips = Resources.LoadAll("SFX", typeof(AudioClip));
+        foreach (var audioClip in audioClips)
+        {
+            var clip = (AudioClip)audioClip;
+            //Debug.Log("Loaded clip: " + clip.name);
+            this.sfxClips.Add(clip.name, clip);
+        }
+    }
+    #endregion
 
     private void OnEnable()
     {
@@ -421,12 +599,11 @@ public class PlayerController : MonoBehaviour
         UpdatePowerSlider();
 
         UpdateCoinsTxt();
-    }
 
-    //private void OnApplicationFocus()
-    //{
-    //    SavePlayerData();
-    //}
+        InitForClimb();
+
+        LoadSounds();
+    }
 
     private void FixedUpdate()
     {
@@ -435,6 +612,10 @@ public class PlayerController : MonoBehaviour
         PlayAnimations();
 
         CheckMaxJump();
+
+        CheckForClimb();
+
+        ClimbTick();
     }
 
     private void CheckMaxJump()

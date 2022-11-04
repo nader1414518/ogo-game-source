@@ -134,12 +134,27 @@ public class WeaponBase : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        HandleEnemyTriggerEnter(other);
+    }
+
+    private void HandleEnemyTriggerEnter(Collider other)
+    {
         if (other.gameObject.tag == "Monster")
         {
             var monster = other.gameObject.GetComponent<BaseEnemyController>();
             if (monster)
             {
-                monster.DecrementHealth(this.damageValue);
+                if (monster.IsDead())
+                    return;
+
+                var playerRef = FindObjectOfType<PlayerController>();
+                if (playerRef)
+                {
+                    if (playerRef.isAttacking)
+                    {
+                        monster.DecrementHealth(this.damageValue);
+                    }
+                }
                 if (monster.GetHealth() <= 0.0f)
                 {
                     // Instantiate one of the collectable
@@ -170,7 +185,13 @@ public class WeaponBase : MonoBehaviour
 
                     monster.GetComponent<BaseEnemyController>().Die();
 
-                    Destroy(monster.gameObject, 5);
+                    var gameMan = FindObjectOfType<GameMan>();
+                    if (gameMan)
+                    {
+                        gameMan.DecreaseEnemiesCount();
+                    }
+
+                    Destroy(monster.gameObject, 2);
                 }
             }
         }
