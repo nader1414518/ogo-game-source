@@ -342,7 +342,7 @@ public class GameMan : MonoBehaviour
 
         ClearSpawnEnemiesSettings();
 
-        SpawnEnemyWave();
+        //SpawnEnemyWave();
     }
 
     private void Update()

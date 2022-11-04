@@ -151,5 +151,53 @@ public class BaseEnemyController : MonoBehaviour
         this.animator.SetFloat("Speed", 1.0f);
 
         this.isDead = true;
+
+        this.gameObject.layer = 8;
+
+        // Maybe start coroutine for making materials opaque here
+        //StartCoroutine(fadeDeadBody());
+    }
+
+
+    // Needs fixing 
+    IEnumerator fadeDeadBody()
+    {
+        var skinnedMeshRenderers = this.gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+        var meshRenderers = this.gameObject.GetComponentsInChildren<MeshRenderer>();
+
+        for (int i = 0; i < 100; i++)
+        {
+            if (skinnedMeshRenderers != null)
+            {
+                foreach (var renderer in skinnedMeshRenderers)
+                {
+                    var tempMats = renderer.materials;
+                    foreach (var mat in tempMats)
+                    {
+                        var tempColor = mat.color;
+                        tempColor.a -= (0.01f);
+                        mat.color = tempColor;
+                    }
+                    renderer.materials = tempMats;
+                }
+            }
+
+            if (meshRenderers != null)
+            {
+                foreach (var renderer in meshRenderers)
+                {
+                    var tempMats = renderer.materials;
+                    foreach (var mat in tempMats)
+                    {
+                        var tempColor = mat.color;
+                        tempColor.a -= (0.01f);
+                        mat.color = tempColor;
+                    }
+                    renderer.materials = tempMats;
+                }
+            }
+
+            yield return new WaitForSeconds(0.02f);
+        }
     }
 }
