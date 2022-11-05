@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Michsky.UI.ModernUIPack;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
 
 public class GameMan : MonoBehaviour
 {
@@ -324,6 +325,11 @@ public class GameMan : MonoBehaviour
         {
             avatarPanel.GetComponent<AvatarPanel>().LoadWeapon(weapon);
         }
+    }
+
+    public void QuitGameBtnCallback()
+    {
+        SceneManager.LoadScene("MainMenu");
     }
 
     void OnEnable()
